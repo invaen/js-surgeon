@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "js-surgeon"
+version = "1.0.0"
+description = "Extract secrets, endpoints, and attack surface from JavaScript"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [{name = "invaen"}]
+keywords = ["security", "javascript", "bug-bounty", "secret-detection", "static-analysis"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+[project.scripts]
+js-surgeon = "js_surgeon:main"
+
+[project.urls]
+Homepage = "https://github.com/invaen/js-surgeon"
+Issues = "https://github.com/invaen/js-surgeon/issues"
