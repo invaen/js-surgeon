@@ -113,6 +113,26 @@ class JSSurgeon:
             'backbone': [
                 (r'Backbone\.(Model|View|Collection)', 'Backbone.js'),
             ],
+            'solid': [
+                (r'createSignal|createEffect|createMemo', 'Solid.js'),
+                (r'solid-js', 'Solid.js'),
+            ],
+            'preact': [
+                (r'preact', 'Preact'),
+                (r'__PREACT_DEVTOOLS__', 'Preact DevTools'),
+            ],
+            'astro': [
+                (r'astro-island', 'Astro'),
+                (r'astro:assets', 'Astro'),
+            ],
+            'htmx': [
+                (r'hx-get|hx-post|hx-trigger', 'htmx'),
+                (r'htmx\.org', 'htmx'),
+            ],
+            'alpine': [
+                (r'x-data|x-bind|x-on', 'Alpine.js'),
+                (r'Alpine\.(start|data)', 'Alpine.js'),
+            ],
         }
 
         # Version extraction patterns
@@ -211,6 +231,20 @@ class JSSurgeon:
 
                 # JWT
                 (r'eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*', 'JWT Token', 'high'),
+
+                # AI / LLM providers
+                (r'sk-[a-zA-Z0-9]{20}T3BlbkFJ[a-zA-Z0-9]{20}', 'OpenAI API Key', 'critical'),
+                (r'sk-ant-api03-[a-zA-Z0-9_-]{93}', 'Anthropic API Key', 'critical'),
+                (r'sk-proj-[a-zA-Z0-9_-]{40,}', 'OpenAI Project Key', 'critical'),
+                (r'hf_[a-zA-Z0-9]{34}', 'Hugging Face Token', 'critical'),
+                (r'r8_[a-zA-Z0-9]{40}', 'Replicate API Token', 'critical'),
+
+                # Supabase
+                (r'sbp_[a-f0-9]{40}', 'Supabase Service Key', 'critical'),
+                (r'eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+', 'Supabase Anon Key', 'medium'),
+
+                # Vercel
+                (r'["\']?VERCEL[_-]?TOKEN["\']?\s*[=:]\s*["\']([^"\']{24,})["\']', 'Vercel Token', 'critical'),
             ],
 
             # URLs & Domains
