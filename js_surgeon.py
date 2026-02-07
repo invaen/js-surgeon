@@ -25,7 +25,7 @@ from urllib.parse import urljoin, urlparse, parse_qs
 import ssl
 import http.client
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 VERSION = "2.0.0"
 
@@ -344,11 +344,11 @@ class JSSurgeon:
         """Calculate Shannon entropy of a string"""
         if not data:
             return 0
+        length = len(data)
         entropy = 0
-        for x in range(256):
-            p_x = float(data.count(chr(x))) / len(data)
-            if p_x > 0:
-                entropy += - p_x * math.log2(p_x)
+        for count in Counter(data).values():
+            p_x = count / length
+            entropy -= p_x * math.log2(p_x)
         return entropy
 
     def score_secret_confidence(self, secret, secret_type):
@@ -395,6 +395,7 @@ class JSSurgeon:
         current_url = url
 
         while redirects < max_redirects:
+            conn = None
             try:
                 parsed = urlparse(current_url)
                 if parsed.scheme == 'https':
@@ -422,14 +423,15 @@ class JSSurgeon:
                     if location:
                         current_url = urljoin(current_url, location)
                         redirects += 1
-                        conn.close()
                         continue
 
                 content = resp.read().decode('utf-8', errors='ignore')
-                conn.close()
                 return content, resp.status
             except Exception as e:
                 return None, 0
+            finally:
+                if conn:
+                    conn.close()
 
         return None, 0
 
@@ -696,7 +698,7 @@ class JSSurgeon:
                         domain = urlparse(url).netloc
                         if domain:
                             self.domains.add(domain)
-                    except:
+                    except Exception:
                         pass
 
         # Find interesting patterns
@@ -813,7 +815,7 @@ class JSSurgeon:
                     try:
                         data = json.loads(content)
                         sm['sources'] = data.get('sources', [])[:20]
-                    except:
+                    except Exception:
                         pass
                 else:
                     sm['accessible'] = False
@@ -826,7 +828,17 @@ class JSSurgeon:
         banner()
         self.log(f"Analyzing file: {filepath}")
 
-        content = Path(filepath).read_text()
+        try:
+            content = Path(filepath).read_text()
+        except FileNotFoundError:
+            self.log(f"File not found: {filepath}", 'error')
+            return
+        except PermissionError:
+            self.log(f"Permission denied reading file: {filepath}", 'error')
+            return
+        except UnicodeDecodeError:
+            self.log(f"Unable to decode file (not valid text): {filepath}", 'error')
+            return
         self.js_files.append({'url': filepath, 'content': content, 'type': 'local', 'size': len(content)})
 
         results = self.analyze_js(content, filepath)
@@ -1147,7 +1159,7 @@ Examples:
     elif args.url:
         banner()
         content, status = surgeon.fetch_url(args.url)
-        if content:
+        if content and status == 200:
             surgeon.js_files.append({'url': args.url, 'content': content, 'type': 'direct', 'size': len(content)})
             results = surgeon.analyze_js(content, args.url)
             surgeon.endpoints.update(results['endpoints'])
