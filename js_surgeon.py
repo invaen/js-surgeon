@@ -22,6 +22,7 @@ import hashlib
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urljoin, urlparse, parse_qs
+import socket
 import ssl
 import http.client
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -427,7 +428,7 @@ class JSSurgeon:
 
                 content = resp.read().decode('utf-8', errors='ignore')
                 return content, resp.status
-            except Exception as e:
+            except (socket.timeout, ConnectionError, ssl.SSLError, OSError, http.client.HTTPException):
                 return None, 0
             finally:
                 if conn:
@@ -698,7 +699,7 @@ class JSSurgeon:
                         domain = urlparse(url).netloc
                         if domain:
                             self.domains.add(domain)
-                    except Exception:
+                    except (ValueError, AttributeError):
                         pass
 
         # Find interesting patterns
@@ -815,7 +816,7 @@ class JSSurgeon:
                     try:
                         data = json.loads(content)
                         sm['sources'] = data.get('sources', [])[:20]
-                    except Exception:
+                    except (json.JSONDecodeError, KeyError, TypeError):
                         pass
                 else:
                     sm['accessible'] = False
