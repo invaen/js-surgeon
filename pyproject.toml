@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "js-surgeon"
-version = "2.0.0"
+version = "2.1.0"
 description = "Extract secrets, endpoints, and attack surface from JavaScript"
 readme = "README.md"
 license = {text = "MIT"}

@@ -24,5 +24,11 @@ jobs:
       - name: Install package
         run: pip install -e .
 
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Run tests
+        run: pytest tests/ -v
+
       - name: Verify CLI entry point
         run: js-surgeon --version

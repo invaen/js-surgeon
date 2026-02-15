@@ -28,7 +28,7 @@ import http.client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter, defaultdict
 
-VERSION = "2.0.0"
+VERSION = "2.1.0"
 
 # Colors
 class C:
