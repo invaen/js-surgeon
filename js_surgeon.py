@@ -36,6 +36,11 @@ class C:
     M = '\033[95m'; C = '\033[96m'; W = '\033[97m'; E = '\033[0m'
     BOLD = '\033[1m'; DIM = '\033[2m'
 
+    @classmethod
+    def disable(cls):
+        cls.R = cls.G = cls.Y = cls.B = cls.M = cls.C = cls.W = cls.E = ''
+        cls.BOLD = cls.DIM = ''
+
 def banner():
     print(f"""{C.R}
        ╦╔═╗  ╔═╗╦ ╦╦═╗╔═╗╔═╗╔═╗╔╗╔
@@ -1030,6 +1035,28 @@ class JSSurgeon:
 
         return output
 
+    def get_json_output(self, target):
+        """Return analysis results as a JSON-serializable dict."""
+        return {
+            'target': target,
+            'version': VERSION,
+            'timestamp': datetime.now().isoformat(),
+            'stats': {
+                'files_analyzed': len(self.js_files),
+                'total_bytes': self.total_bytes,
+                'total_lines': self.total_lines,
+            },
+            'frameworks': self.frameworks,
+            'endpoints': sorted(self.endpoints),
+            'secrets': self.secrets,
+            'source_maps': self.source_maps,
+            'interesting': self.interesting,
+            'domains': sorted(self.domains),
+            'sensitive_paths': [p['path'] for p in self.sensitive_paths],
+            'query_params': sorted(self.query_params),
+            'dev_comments': self.dev_comments[:50],
+        }
+
     def generate_markdown_report(self, target):
         """Generate markdown report for documentation"""
         output = self.generate_report(target)
@@ -1148,17 +1175,29 @@ Examples:
     parser.add_argument('--report', action='store_true', help='Generate markdown report')
     parser.add_argument('-t', '--threads', type=int, default=5, help='Number of threads (default: 5)')
     parser.add_argument('-v', '--version', action='version', version=f'JS Surgeon v{VERSION}')
+    parser.add_argument('--no-color', action='store_true', help='Disable colored output')
+    parser.add_argument('--json', action='store_true', help='Output results as JSON to stdout')
 
     args = parser.parse_args()
 
+    if args.no_color:
+        C.disable()
+
     surgeon = JSSurgeon(output_dir=args.output, deep=args.deep, threads=args.threads)
+
+    if args.json:
+        C.disable()
 
     if args.file:
         surgeon.analyze_file(args.file)
-        if args.report:
+        if args.json:
+            output = surgeon.get_json_output(args.file)
+            print(json.dumps(output, indent=2))
+        elif args.report:
             surgeon.generate_markdown_report(args.file)
     elif args.url:
-        banner()
+        if not args.json:
+            banner()
         content, status = surgeon.fetch_url(args.url)
         if content and status == 200:
             surgeon.js_files.append({'url': args.url, 'content': content, 'type': 'direct', 'size': len(content)})
@@ -1171,12 +1210,19 @@ Examples:
             surgeon.dev_comments.extend(results['dev_comments'])
             surgeon.sensitive_paths.extend(results['sensitive_paths'])
             surgeon.query_params.update(results['query_params'])
-            surgeon.generate_report(args.url)
-            if args.report:
-                surgeon.generate_markdown_report(args.url)
+            if args.json:
+                output = surgeon.get_json_output(args.url)
+                print(json.dumps(output, indent=2))
+            else:
+                surgeon.generate_report(args.url)
+                if args.report:
+                    surgeon.generate_markdown_report(args.url)
     elif args.target:
         surgeon.analyze_target(args.target)
-        if args.report:
+        if args.json:
+            output = surgeon.get_json_output(args.target)
+            print(json.dumps(output, indent=2))
+        elif args.report:
             surgeon.generate_markdown_report(args.target)
     else:
         parser.print_help()
