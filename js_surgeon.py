@@ -28,7 +28,7 @@ import http.client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter, defaultdict
 
-VERSION = "2.1.0"
+VERSION = "2.1.1"
 
 # Colors
 class C:
@@ -395,10 +395,11 @@ class JSSurgeon:
 
     # ==================== JS FILE DISCOVERY ====================
 
-    def fetch_url(self, url, follow_redirects=True, max_redirects=3):
-        """Fetch content from URL with redirect handling"""
+    def fetch_url(self, url, follow_redirects=True, max_redirects=5):
+        """Fetch content from URL with redirect handling and loop detection"""
         redirects = 0
         current_url = url
+        visited = {url}
 
         while redirects < max_redirects:
             conn = None
@@ -427,7 +428,11 @@ class JSSurgeon:
                 if resp.status in (301, 302, 303, 307, 308) and follow_redirects:
                     location = resp.getheader('Location')
                     if location:
-                        current_url = urljoin(current_url, location)
+                        next_url = urljoin(current_url, location)
+                        if next_url in visited:
+                            return None, 0  # Circular redirect detected
+                        visited.add(next_url)
+                        current_url = next_url
                         redirects += 1
                         continue
 
