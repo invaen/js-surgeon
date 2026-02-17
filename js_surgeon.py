@@ -51,11 +51,12 @@ def banner():
 
 
 class JSSurgeon:
-    def __init__(self, output_dir=None, deep=False, threads=5):
+    def __init__(self, output_dir=None, deep=False, threads=5, insecure=True):
         self.output_dir = Path(output_dir) if output_dir else Path.cwd() / 'js-analysis'
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.deep = deep
         self.threads = threads
+        self.insecure = insecure
         self.start_time = datetime.now()
 
         # Tracking
@@ -331,6 +332,14 @@ class JSSurgeon:
             ],
         }
 
+    def _ssl_context(self):
+        """Create SSL context respecting --insecure flag."""
+        ctx = ssl.create_default_context()
+        if self.insecure:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+        return ctx
+
     def log(self, msg, level='info'):
         icons = {
             'info': f'{C.B}[*]{C.E}',
@@ -406,10 +415,7 @@ class JSSurgeon:
             try:
                 parsed = urlparse(current_url)
                 if parsed.scheme == 'https':
-                    context = ssl.create_default_context()
-                    context.check_hostname = False
-                    context.verify_mode = ssl.CERT_NONE
-                    conn = http.client.HTTPSConnection(parsed.netloc, timeout=15, context=context)
+                    conn = http.client.HTTPSConnection(parsed.netloc, timeout=15, context=self._ssl_context())
                 else:
                     conn = http.client.HTTPConnection(parsed.netloc, timeout=15)
 
@@ -1182,13 +1188,17 @@ Examples:
     parser.add_argument('-v', '--version', action='version', version=f'JS Surgeon v{VERSION}')
     parser.add_argument('--no-color', action='store_true', help='Disable colored output')
     parser.add_argument('--json', action='store_true', help='Output results as JSON to stdout')
+    parser.add_argument('--insecure', action='store_true', default=True,
+                        help='Skip SSL certificate verification (default: on)')
+    parser.add_argument('--no-insecure', action='store_false', dest='insecure',
+                        help='Enable SSL certificate verification')
 
     args = parser.parse_args()
 
     if args.no_color:
         C.disable()
 
-    surgeon = JSSurgeon(output_dir=args.output, deep=args.deep, threads=args.threads)
+    surgeon = JSSurgeon(output_dir=args.output, deep=args.deep, threads=args.threads, insecure=args.insecure)
 
     if args.json:
         C.disable()
