@@ -28,7 +28,7 @@ import http.client
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter, defaultdict
 
-VERSION = "2.1.1"
+VERSION = "2.1.2"
 
 # Colors
 class C:
@@ -220,7 +220,7 @@ class JSSurgeon:
                 (r'https://discord\.com/api/webhooks/[0-9]+/[A-Za-z0-9_-]+', 'Discord Webhook', 'high'),
 
                 # Database
-                (r'mongodb(\+srv)?://[^\s"\']+', 'MongoDB URI', 'critical'),
+                (r'mongodb(?:\+srv)?://[^\s"\']+', 'MongoDB URI', 'critical'),
                 (r'postgres://[^\s"\']+', 'PostgreSQL URI', 'critical'),
                 (r'mysql://[^\s"\']+', 'MySQL URI', 'critical'),
                 (r'redis://[^\s"\']+', 'Redis URI', 'high'),
@@ -691,7 +691,7 @@ class JSSurgeon:
                 severity = 'medium'
 
             for match in re.finditer(pattern, content, re.IGNORECASE):
-                secret = match.group(1) if match.groups() else match.group(0)
+                secret = match.group(1) if match.groups() and match.group(1) is not None else match.group(0)
                 if self.is_valid_secret(secret):
                     confidence = self.score_secret_confidence(secret, secret_type)
                     if confidence >= 30:  # Only include if reasonably confident
